@@ -5,8 +5,15 @@ const rl = createInterface({
   output: process.stdout,
 });
 
-// Uncomment this block to pass the first stage
-rl.question("$ ", (answer) => {
-  console.log(`${answer}: command not found`);
-  rl.close();
-});
+const prompt = () => {
+  rl.question("$ ", (answer) => {
+    if (answer == "exit") {
+      rl.close();
+      return;
+    }
+    console.log(`${answer}: command not found`);
+    prompt();
+  });
+};
+
+prompt();

@@ -7,11 +7,18 @@ const rl = createInterface({
 
 const prompt = () => {
   rl.question("$ ", (answer) => {
-    if (answer == "exit 0") {
+    const trimmed = answer.trim();
+    if (trimmed == "exit 0") {
       rl.close();
       return;
     }
-    console.log(`${answer}: command not found`);
+    const [command, ...args] = trimmed.split(" ");
+
+    if (command == "echo") {
+      console.log(args.join(" "));
+    } else {
+      console.log(`${answer}: command not found`);
+    }
     prompt();
   });
 };

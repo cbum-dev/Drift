@@ -7,7 +7,7 @@ const rl = createInterface({
 
 const prompt = () => {
   rl.question("$ ", (answer) => {
-    if (answer == "exit") {
+    if (answer == "exit 0") {
       rl.close();
       return;
     }

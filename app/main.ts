@@ -21,7 +21,12 @@ const pwd = (args: string[], onComplete: () => void) => {
 };
 
 const cd = (args: string[], onComplete: () => void) => {
-  const targetDir = args[0] || process.env.HOME;
+  let targetDir = args[0] || process.env.HOME;
+
+  if (targetDir === "~") {
+    targetDir = process.env.HOME;
+  }
+
 
   if(!targetDir){
     process.stderr.write("cd: No directory specified and HOME not set\n");
@@ -31,7 +36,8 @@ const cd = (args: string[], onComplete: () => void) => {
   try {
     if (existsSync(targetDir) && statSync(targetDir).isDirectory()) {
       process.chdir(targetDir);
-    } else {
+    } 
+    else {
       process.stderr.write(`cd: ${targetDir}: No such file or directory\n`);
     }
   } catch (err: any) {

@@ -1,66 +1,111 @@
 import { createInterface } from "readline";
-import * as fs from "fs";
-import * as path from "path";
+import { existsSync, accessSync, constants } from "fs";
+import { spawn } from "child_process";
 
 const rl = createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
-const builtins = ["echo", "exit", "type"];
+const builtinCommands = ["echo", "exit", "type"];
 
-const isExecutable = (filePath: string): boolean => {
-  try {
-    fs.accessSync(filePath, fs.constants.X_OK);
-    return true;
-  } catch {
-    return false;
-  }
+const echo = (args: string[], onComplete: () => void) => {
+  process.stdout.write(`${args.join(" ")}\n`);
+  onComplete();
 };
 
-const findInPath = (cmd: string): string | null => {
-  const pathDirs = process.env.PATH?.split(":") || [];
-  for (const dir of pathDirs) {
-    const fullPath = path.join(dir, cmd);
-    if (fs.existsSync(fullPath) && isExecutable(fullPath)) {
-      return fullPath;
-    }
+const type = (args: string[], onComplete: () => void) => {
+  const input = args[0] || "";
+  const paths = process.env["PATH"]?.split(":") || [];
+
+  if (builtinCommands.includes(input)) {
+    process.stdout.write(`${input} is a shell builtin\n`);
+    onComplete();
+    return;
   }
-  return null;
+
+  for (const path of paths) {
+    if (!path) continue;
+    const filePath = `${path}/${input}`;
+    try {
+      accessSync(filePath, constants.X_OK);
+      process.stdout.write(`${input} is ${filePath}\n`);
+      onComplete();
+      return;
+    } catch {}
+  }
+
+  process.stdout.write(`${input}: not found\n`);
+  onComplete();
 };
 
-const prompt = () => {
-  rl.question("$ ", (input) => {
-    const trimmed = input.trim();
-    if (trimmed === "exit 0") {
-      rl.close();
-      process.exit(0);
-    }
+const exit = (args: string[]) => {
+  const code = args[0] ? parseInt(args[0], 10) : 0;
+  process.exit(isNaN(code) ? 1 : code);
+};
 
-    const [command, ...args] = trimmed.split(" ");
+const executeExternalCommand = (
+  command: string,
+  args: string[],
+  onComplete: () => void
+) => {
+  const paths = process.env["PATH"]?.split(":") || [];
 
-    if (command === "echo") {
-      console.log(args.join(" "));
-    } else if (command === "type") {
-      const target = args[0];
-      if (!target) {
-        console.log(`type: missing argument`);
-      } else if (builtins.includes(target)) {
-        console.log(`${target} is a shell builtin`);
-      } else {
-        const fullPath = findInPath(target);
-        if (fullPath) {
-          console.log(`${target} is ${fullPath}`);
-        } else {
-          console.log(`${target}: not found`);
-        }
-      }
-    } else {
-      console.log(`${command}: not found`);
-    }
+  let executablePath: string | null = null;
+  for (const path of paths) {
+    if (!path) continue;
+    const fullPath = `${path}/${command}`;
+    try {
+      accessSync(fullPath, constants.X_OK);
+      executablePath = fullPath;
+      break;
+    } catch {}
+  }
 
-    prompt();
+  if (!executablePath) {
+    process.stdout.write(`${command}: command not found\n`);
+    onComplete();
+    return;
+  }
+
+  const childProcess = spawn(executablePath, args, {
+    stdio: "inherit",
+    argv0: command,
+  });
+
+  childProcess.on("close", () => onComplete());
+  childProcess.on("error", (err) => {
+    process.stderr.write(`Failed to start subprocess: ${err.message}\n`);
+    onComplete();
   });
 };
 
-prompt();
+const handlers: Record<
+  string,
+  (args: string[], onComplete: () => void) => void
+> = {
+  echo,
+  type,
+  exit: (args) => exit(args),
+};
+
+const main = (): void => {
+  rl.question("$ ", (input: string) => {
+    const tokens = input.trim().split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) {
+      main();
+      return;
+    }
+
+    const [command, ...args] = tokens;
+    const next = () => main();
+
+    if (handlers[command]) {
+      handlers[command](args, next);
+    } else {
+      executeExternalCommand(command, args, next);
+    }
+  });
+};
+
+main();

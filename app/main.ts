@@ -7,10 +7,16 @@ const rl = createInterface({
   output: process.stdout,
 });
 
-const builtinCommands = ["echo", "exit", "type"];
+const builtinCommands = ["echo", "exit", "type","pwd"];
 
 const echo = (args: string[], onComplete: () => void) => {
   process.stdout.write(`${args.join(" ")}\n`);
+  onComplete();
+};
+
+const pwd = (args: string[], onComplete: () => void) => {
+  const currDir = process.cwd();
+  process.stdout.write(`${currDir}\n`);
   onComplete();
 };
 
@@ -86,6 +92,7 @@ const handlers: Record<
 > = {
   echo,
   type,
+  pwd,
   exit: (args) => exit(args),
 };
 

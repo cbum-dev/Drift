@@ -1,5 +1,5 @@
 import { createInterface } from "readline";
-import { existsSync, accessSync, constants } from "fs";
+import { existsSync,accessSync, constants,statSync } from "fs";
 import { spawn } from "child_process";
 
 const rl = createInterface({
@@ -19,6 +19,28 @@ const pwd = (args: string[], onComplete: () => void) => {
   process.stdout.write(`${currDir}\n`);
   onComplete();
 };
+
+const cd = (args: string[], onComplete: () => void) => {
+  const targetDir = args[0] || process.env.HOME;
+
+  if(!targetDir){
+    process.stderr.write("cd: No directory specified and HOME not set\n");
+    onComplete();
+    return;
+  }
+  try {
+    if (existsSync(targetDir) && statSync(targetDir).isDirectory()) {
+      process.chdir(targetDir);
+    } else {
+      process.stderr.write(`cd: ${targetDir}: No such directory\n`);
+    }
+  } catch (err: any) {
+    process.stderr.write(`cd: ${err.message}\n`);
+  }
+
+  onComplete();
+
+}
 
 const type = (args: string[], onComplete: () => void) => {
   const input = args[0] || "";
@@ -91,6 +113,7 @@ const handlers: Record<
   (args: string[], onComplete: () => void) => void
 > = {
   echo,
+  cd,
   type,
   pwd,
   exit: (args) => exit(args),

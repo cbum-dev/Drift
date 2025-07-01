@@ -32,12 +32,11 @@ const cd = (args: string[], onComplete: () => void) => {
     if (existsSync(targetDir) && statSync(targetDir).isDirectory()) {
       process.chdir(targetDir);
     } else {
-      process.stderr.write(`cd: ${targetDir}: No such directory\n`);
+      process.stderr.write(`cd: ${targetDir}: No such file or directory\n`);
     }
   } catch (err: any) {
     process.stderr.write(`cd: ${err.message}\n`);
   }
-
   onComplete();
 
 }

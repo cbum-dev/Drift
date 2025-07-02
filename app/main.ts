@@ -51,12 +51,18 @@ const cd = (args: string[], onComplete: () => void) => {
 }
 
 const history = (args: string[], onComplete: () => void) => {
-  for (let i = 0;i<historyElements.length;i++){
-    process.stdout.write(`${i+1} ${historyElements[i]}\n`)
-  }
-  onComplete();
-}
+  const num = parseInt(args[0], 10);
+  const count = !isNaN(num) ? num : historyElements.length;
 
+  const start = Math.max(historyElements.length - count, 0);
+  for (let i = start; i < historyElements.length; i++) {
+    const cmd = historyElements[i];
+    process.stdout.write(`${i + 1}  ${cmd}\n`);
+  }
+
+
+  onComplete();
+};
 const type = (args: string[], onComplete: () => void) => {
   const input = args[0] || "";
   const paths = process.env["PATH"]?.split(":") || [];

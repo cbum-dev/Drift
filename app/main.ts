@@ -1,6 +1,8 @@
 import { createInterface } from "readline";
 import { existsSync,accessSync, constants,statSync } from "fs";
 import { spawn } from "child_process";
+import { parse } from "shell-quote";
+
 
 const rl = createInterface({
   input: process.stdin,
@@ -126,7 +128,8 @@ const handlers: Record<
 
 const main = (): void => {
   rl.question("$ ", (input: string) => {
-    const tokens = input.trim().split(/\s+/).filter(Boolean);
+
+    const tokens = parse(input).filter((t:any) => typeof t === "string") as string[];
     if (tokens.length === 0) {
       main();
       return;

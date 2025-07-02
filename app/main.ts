@@ -9,7 +9,7 @@ const rl = createInterface({
   output: process.stdout,
 });
 
-const builtinCommands = ["echo", "exit", "type","pwd"];
+const builtinCommands = ["echo", "exit", "type","pwd","history"];
 
 const echo = (args: string[], onComplete: () => void) => {
   process.stdout.write(`${args.join(" ")}\n`);

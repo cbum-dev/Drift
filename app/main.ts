@@ -9,6 +9,7 @@ const rl = createInterface({
   output: process.stdout,
 });
 
+let historyElements:string[] = []
 const builtinCommands = ["echo", "exit", "type","pwd","history"];
 
 const echo = (args: string[], onComplete: () => void) => {
@@ -47,6 +48,13 @@ const cd = (args: string[], onComplete: () => void) => {
   }
   onComplete();
 
+}
+
+const history = (args: string[], onComplete: () => void) => {
+  for (let i = 0;i<historyElements.length;i++){
+    process.stdout.write(`${i+1} ${historyElements[i]}\n`)
+  }
+  onComplete();
 }
 
 const type = (args: string[], onComplete: () => void) => {
@@ -123,12 +131,13 @@ const handlers: Record<
   cd,
   type,
   pwd,
+  history,
   exit: (args) => exit(args),
 };
 
 const main = (): void => {
   rl.question("$ ", (input: string) => {
-
+    historyElements.push(input)
     const tokens = parse(input).filter((t:any) => typeof t === "string") as string[];
     if (tokens.length === 0) {
       main();

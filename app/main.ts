@@ -1,16 +1,15 @@
 import { createInterface } from "readline";
-import { existsSync,accessSync, constants,statSync } from "fs";
+import { existsSync, accessSync, constants, statSync, readFileSync } from "fs";
 import { spawn } from "child_process";
 import { parse } from "shell-quote";
-
 
 const rl = createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
-let historyElements:string[] = []
-const builtinCommands = ["echo", "exit", "type","pwd","history"];
+let historyElements: string[] = [];
+const builtinCommands = ["echo", "exit", "type", "pwd", "history"];
 
 const echo = (args: string[], onComplete: () => void) => {
   process.stdout.write(`${args.join(" ")}\n`);
@@ -30,8 +29,7 @@ const cd = (args: string[], onComplete: () => void) => {
     targetDir = process.env.HOME;
   }
 
-
-  if(!targetDir){
+  if (!targetDir) {
     process.stderr.write("cd: No directory specified and HOME not set\n");
     onComplete();
     return;
@@ -39,27 +37,38 @@ const cd = (args: string[], onComplete: () => void) => {
   try {
     if (existsSync(targetDir) && statSync(targetDir).isDirectory()) {
       process.chdir(targetDir);
-    } 
-    else {
+    } else {
       process.stderr.write(`cd: ${targetDir}: No such file or directory\n`);
     }
   } catch (err: any) {
     process.stderr.write(`cd: ${err.message}\n`);
   }
   onComplete();
-
-}
+};
 
 const history = (args: string[], onComplete: () => void) => {
   const num = parseInt(args[0], 10);
   const count = !isNaN(num) ? num : historyElements.length;
 
   const start = Math.max(historyElements.length - count, 0);
+  if (args[0] === "-r") {
+    const filePath = args[1] || ".history";
+    try {
+      const fileContent = readFileSync(filePath, "utf-8");
+      const lines = fileContent
+        .split("\n")
+        .filter((line) => line.trim() !== "");
+      historyElements.push(...lines);
+    } catch (err: any) {
+      process.stderr.write(`Error reading history file: ${err.message}\n`);
+    }      
+    onComplete();
+    return;
+  }
   for (let i = start; i < historyElements.length; i++) {
     const cmd = historyElements[i];
     process.stdout.write(`${i + 1}  ${cmd}\n`);
   }
-
 
   onComplete();
 };
@@ -143,8 +152,10 @@ const handlers: Record<
 
 const main = (): void => {
   rl.question("$ ", (input: string) => {
-    historyElements.push(input)
-    const tokens = parse(input).filter((t:any) => typeof t === "string") as string[];
+    historyElements.push(input);
+    const tokens = parse(input).filter(
+      (t: any) => typeof t === "string"
+    ) as string[];
     if (tokens.length === 0) {
       main();
       return;

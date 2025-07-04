@@ -1,5 +1,12 @@
 import { createInterface } from "readline";
-import { existsSync, accessSync, constants, statSync, readFileSync } from "fs";
+import {
+  existsSync,
+  accessSync,
+  constants,
+  statSync,
+  readFileSync,
+  writeFileSync,
+} from "fs";
 import { spawn } from "child_process";
 import { parse } from "shell-quote";
 
@@ -61,10 +68,21 @@ const history = (args: string[], onComplete: () => void) => {
       historyElements.push(...lines);
     } catch (err: any) {
       process.stderr.write(`Error reading history file: ${err.message}\n`);
-    }      
+    }
     onComplete();
     return;
+  } else if (args[0] === "-w" && args[1]) {
+    const filePath = args[1];
+
+    try {
+      writeFileSync(filePath, historyElements.join("\n") + "\n", "utf-8");
+      onComplete();
+      return;
+    } catch (err: any) {
+      process.stderr.write(`history -w: ${err.message}\n`);
+    }
   }
+
   for (let i = start; i < historyElements.length; i++) {
     const cmd = historyElements[i];
     process.stdout.write(`${i + 1}  ${cmd}\n`);

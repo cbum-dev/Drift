@@ -19,6 +19,7 @@ const rl = createInterface({
 let historyElements: string[] = [];
 const builtinCommands = ["echo", "exit", "type", "pwd", "history"];
 let appendCounter = 0
+const histfile = process.env.HISTFILE;
 
 const echo = (args: string[], onComplete: () => void) => {
   process.stdout.write(`${args.join(" ")}\n`);
@@ -54,6 +55,15 @@ const cd = (args: string[], onComplete: () => void) => {
   }
   onComplete();
 };
+
+if (histfile && existsSync(histfile)) {
+  const lines = readFileSync(histfile, "utf-8")
+    .split("\n")
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  historyElements.push(...lines);
+}
 
 const history = (args: string[], onComplete: () => void) => {
   const num = parseInt(args[0], 10);

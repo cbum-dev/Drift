@@ -6,6 +6,7 @@ import {
   statSync,
   readFileSync,
   writeFileSync,
+  appendFileSync
 } from "fs";
 import { spawn } from "child_process";
 import { parse } from "shell-quote";
@@ -17,6 +18,7 @@ const rl = createInterface({
 
 let historyElements: string[] = [];
 const builtinCommands = ["echo", "exit", "type", "pwd", "history"];
+let appendCounter = 0
 
 const echo = (args: string[], onComplete: () => void) => {
   process.stdout.write(`${args.join(" ")}\n`);
@@ -58,7 +60,7 @@ const history = (args: string[], onComplete: () => void) => {
   const count = !isNaN(num) ? num : historyElements.length;
 
   const start = Math.max(historyElements.length - count, 0);
-  if (args[0] === "-r") {
+  if (args[0] === "-r" && args[1]) {
     const filePath = args[1] || ".history";
     try {
       const fileContent = readFileSync(filePath, "utf-8");
@@ -76,6 +78,21 @@ const history = (args: string[], onComplete: () => void) => {
 
     try {
       writeFileSync(filePath, historyElements.join("\n") + "\n", "utf-8");
+      onComplete();
+      return;
+    } catch (err: any) {
+      process.stderr.write(`history -w: ${err.message}\n`);
+    }
+  }
+   else if (args[0] === "-a" && args[1]) {
+    const filePath = args[1];
+
+    try {
+      const lastElements = historyElements.slice(appendCounter);
+      for (const line of lastElements){
+        appendFileSync(filePath,line + "\n","utf-8")
+      }
+      appendCounter += historyElements.length;
       onComplete();
       return;
     } catch (err: any) {

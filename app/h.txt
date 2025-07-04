@@ -1,1 +1,16 @@
-history -w app/h.txt
+history -a app/h.txt
+ahs
+as
+as
+as
+history -a app/h.txt
+history -a app/h.txt0
+0
+1
+2
+history -a app/h.txt
+history -a app/h.txt
+history -a app/h.txt
+sd
+sd
+history -a app/h.txt

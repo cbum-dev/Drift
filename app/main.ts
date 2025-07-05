@@ -16,8 +16,12 @@ const builtinCommands = ["echo", "exit", "type", "pwd", "history"];
 
 const completer = (line: string) => {
   const hits = builtinCommands.filter((c) => c.startsWith(line)).map(c => `${c} `)
+  if (hits.length == 0){
+    process.stdout.write("\x07");
+  }
   return [hits, line]
-}
+  }
+
 
 const rl = createInterface({
   input: process.stdin,

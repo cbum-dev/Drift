@@ -11,13 +11,21 @@ import {
 import { spawn } from "child_process";
 import { parse } from "shell-quote";
 
+
+const builtinCommands = ["echo", "exit", "type", "pwd", "history"];
+
+const completer = (line: string) => {
+  const hits = builtinCommands.filter((c) => c.startsWith(line)).map(c => `${c} `)
+  return [hits, line]
+}
+
 const rl = createInterface({
   input: process.stdin,
   output: process.stdout,
+  completer: completer
 });
 
 let historyElements: string[] = [];
-const builtinCommands = ["echo", "exit", "type", "pwd", "history"];
 let appendCounter = 0;
 
 const echo = (args: string[], onComplete: () => void) => {

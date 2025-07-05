@@ -14,3 +14,8 @@ history -a app/h.txt
 sd
 sd
 history -a app/h.txt
+a
+sd
+sd
+sd
+exit

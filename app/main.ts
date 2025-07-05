@@ -6,7 +6,7 @@ import {
   statSync,
   readFileSync,
   writeFileSync,
-  appendFileSync
+  appendFileSync,
 } from "fs";
 import { spawn } from "child_process";
 import { parse } from "shell-quote";
@@ -18,8 +18,7 @@ const rl = createInterface({
 
 let historyElements: string[] = [];
 const builtinCommands = ["echo", "exit", "type", "pwd", "history"];
-let appendCounter = 0
-const histfile = process.env.HISTFILE;
+let appendCounter = 0;
 
 const echo = (args: string[], onComplete: () => void) => {
   process.stdout.write(`${args.join(" ")}\n`);
@@ -56,14 +55,21 @@ const cd = (args: string[], onComplete: () => void) => {
   onComplete();
 };
 
-if (histfile && existsSync(histfile)) {
-  const lines = readFileSync(histfile, "utf-8")
-    .split("\n")
-    .map(line => line.trim())
-    .filter(Boolean);
-
-  historyElements.push(...lines);
-}
+const saveHistory = () => {
+  const histFile = process.env.HISTFILE;
+  if (histFile && existsSync(histFile)) {
+    try {
+      const historyContent = readFileSync(histFile, "utf-8");
+      const commands = historyContent
+        .split("\n")
+        .map((cmd) => cmd.trim())
+        .filter((cmd) => cmd !== "");
+      historyElements.push(...commands);
+    } catch (error) {
+      console.error(`Failed to load history from ${histFile}:`, error);
+    }
+  }
+};
 
 const history = (args: string[], onComplete: () => void) => {
   const num = parseInt(args[0], 10);
@@ -93,14 +99,13 @@ const history = (args: string[], onComplete: () => void) => {
     } catch (err: any) {
       process.stderr.write(`history -w: ${err.message}\n`);
     }
-  }
-   else if (args[0] === "-a" && args[1]) {
+  } else if (args[0] === "-a" && args[1]) {
     const filePath = args[1];
 
     try {
       const lastElements = historyElements.slice(appendCounter);
-      for (const line of lastElements){
-        appendFileSync(filePath,line + "\n","utf-8")
+      for (const line of lastElements) {
+        appendFileSync(filePath, line + "\n", "utf-8");
       }
       appendCounter += historyElements.length;
       onComplete();
@@ -117,6 +122,7 @@ const history = (args: string[], onComplete: () => void) => {
 
   onComplete();
 };
+
 const type = (args: string[], onComplete: () => void) => {
   const input = args[0] || "";
   const paths = process.env["PATH"]?.split(":") || [];
@@ -142,8 +148,19 @@ const type = (args: string[], onComplete: () => void) => {
   onComplete();
 };
 
+const saveHistoryOnExit = () => {
+  const histFile = process.env.HISTFILE;
+  if (!histFile) return;
+
+  try {
+    writeFileSync(histFile, historyElements.join("\n") + "\n", "utf-8");
+  } catch (err: any) {
+    process.stderr.write(`Failed to write history: ${err.message}\n`);
+  }}
+
 const exit = (args: string[]) => {
   const code = args[0] ? parseInt(args[0], 10) : 0;
+  saveHistoryOnExit();
   process.exit(isNaN(code) ? 1 : code);
 };
 
@@ -217,4 +234,5 @@ const main = (): void => {
   });
 };
 
+saveHistory();
 main();

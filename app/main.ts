@@ -10,12 +10,25 @@ import {
 } from "fs";
 import { spawn } from "child_process";
 import { parse } from "shell-quote";
+import { execSync as childExecSync } from "child_process";
 
 
 const builtinCommands = ["echo", "exit", "type", "pwd", "history"];
+const pathDirs = process.env.PATH?.split(":") || [];
 
 const completer = (line: string) => {
-  const hits = builtinCommands.filter((c) => c.startsWith(line)).map(c => `${c} `)
+    const executables: string[] = []
+
+    for (const path of pathDirs) {
+    try {
+      const files = execSync(`ls -1 ${path} 2>/dev/null`).toString().split('\n').filter(f => f)
+      executables.push(...files)
+    } catch {
+
+    }
+  }
+  const hits = [...builtinCommands, ...executables].filter((c) => c.startsWith(line)).map(c => `${c} `)
+
   if (hits.length == 0){
     process.stdout.write("\x07");
   }
@@ -248,3 +261,7 @@ const main = (): void => {
 
 saveHistory();
 main();
+function execSync(command: string) {
+  return childExecSync(command);
+}
+

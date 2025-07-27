@@ -11,7 +11,21 @@ import {
 import { spawn } from "child_process";
 import { parse } from "shell-quote";
 import { execSync as childExecSync } from "child_process";
+import chalk, { chalkStderr } from "chalk"
+import cfonts from 'cfonts';
 
+cfonts.say('Drift', {
+  font: 'block',
+  align: 'left',
+  colors: ['blue', 'cyan'],
+});
+
+const getPrompt = () => {
+  const user = process.env.USER || "user";
+  const cwd = process.cwd().split("/").pop();
+  return chalk.greenBright(`${user}`) + chalk.gray(" at ") +
+         chalk.green(`${cwd}`) + chalk.gray(" ➜ ") + chalk.yellowBright("$ ");
+};
 
 const builtinCommands = ["echo", "exit", "type", "pwd", "history"];
 const pathDirs = process.env.PATH?.split(":") || [];
@@ -46,13 +60,13 @@ let historyElements: string[] = [];
 let appendCounter = 0;
 
 const echo = (args: string[], onComplete: () => void) => {
-  process.stdout.write(`${args.join(" ")}\n`);
+  process.stdout.write(chalk.blueBright(`${args.join(" ")}\n`));
   onComplete();
 };
 
 const pwd = (args: string[], onComplete: () => void) => {
   const currDir = process.cwd();
-  process.stdout.write(`${currDir}\n`);
+  process.stdout.write(chalk.blackBright(`${currDir}\n`));
   onComplete();
 };
 
@@ -64,7 +78,7 @@ const cd = (args: string[], onComplete: () => void) => {
   }
 
   if (!targetDir) {
-    process.stderr.write("cd: No directory specified and HOME not set\n");
+    process.stderr.write(chalkStderr.redBright("cd: No directory specified and HOME not set\n"));
     onComplete();
     return;
   }
@@ -72,10 +86,10 @@ const cd = (args: string[], onComplete: () => void) => {
     if (existsSync(targetDir) && statSync(targetDir).isDirectory()) {
       process.chdir(targetDir);
     } else {
-      process.stderr.write(`cd: ${targetDir}: No such file or directory\n`);
+      process.stderr.write(chalkStderr.redBright(`cd: ${targetDir}: No such file or directory\n`));
     }
   } catch (err: any) {
-    process.stderr.write(`cd: ${err.message}\n`);
+    process.stderr.write(chalkStderr.redBright(`cd: ${err.message}\n`));
   }
   onComplete();
 };
@@ -110,7 +124,7 @@ const history = (args: string[], onComplete: () => void) => {
         .filter((line) => line.trim() !== "");
       historyElements.push(...lines);
     } catch (err: any) {
-      process.stderr.write(`Error reading history file: ${err.message}\n`);
+      process.stderr.write(chalkStderr.redBright(`Error reading history file: ${err.message}\n`));
     }
     onComplete();
     return;
@@ -122,7 +136,7 @@ const history = (args: string[], onComplete: () => void) => {
       onComplete();
       return;
     } catch (err: any) {
-      process.stderr.write(`history -w: ${err.message}\n`);
+      process.stderr.write(chalkStderr.redBright(`history -w: ${err.message}\n`));
     }
   } else if (args[0] === "-a" && args[1]) {
     const filePath = args[1];
@@ -136,7 +150,7 @@ const history = (args: string[], onComplete: () => void) => {
       onComplete();
       return;
     } catch (err: any) {
-      process.stderr.write(`history -w: ${err.message}\n`);
+      process.stderr.write(chalkStderr.redBright(`history -w: ${err.message}\n`));
     }
   }
 
@@ -153,7 +167,7 @@ const type = (args: string[], onComplete: () => void) => {
   const paths = process.env["PATH"]?.split(":") || [];
 
   if (builtinCommands.includes(input)) {
-    process.stdout.write(`${input} is a shell builtin\n`);
+    process.stdout.write(chalkStderr.redBright(`${input} is a shell builtin\n`));
     onComplete();
     return;
   }
@@ -169,7 +183,7 @@ const type = (args: string[], onComplete: () => void) => {
     } catch {}
   }
 
-  process.stdout.write(`${input}: not found\n`);
+  process.stdout.write(chalk.red(`${input}: not found\n`));
   onComplete();
 };
 
@@ -180,7 +194,7 @@ const saveHistoryOnExit = () => {
   try {
     writeFileSync(histFile, historyElements.join("\n") + "\n", "utf-8");
   } catch (err: any) {
-    process.stderr.write(`Failed to write history: ${err.message}\n`);
+    process.stderr.write(chalkStderr.redBright(`Failed to write history: ${err.message}\n`));
   }}
 
 const exit = (args: string[]) => {
@@ -208,7 +222,7 @@ const executeExternalCommand = (
   }
 
   if (!executablePath) {
-    process.stdout.write(`${command}: command not found\n`);
+    process.stdout.write(chalkStderr.redBright(`${command}: command not found\n`));
     onComplete();
     return;
   }
@@ -220,7 +234,7 @@ const executeExternalCommand = (
 
   childProcess.on("close", () => onComplete());
   childProcess.on("error", (err) => {
-    process.stderr.write(`Failed to start subprocess: ${err.message}\n`);
+    process.stderr.write(chalkStderr.redBright(`Failed to start subprocess: ${err.message}\n`));
     onComplete();
   });
 };
@@ -238,7 +252,7 @@ const handlers: Record<
 };
 
 const main = (): void => {
-  rl.question("$ ", (input: string) => {
+  rl.question(getPrompt(), (input: string) => {
     historyElements.push(input);
     const tokens = parse(input).filter(
       (t: any) => typeof t === "string"

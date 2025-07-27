@@ -1,4 +1,4 @@
-custom_exe_1234 alice#!/bin/sh
+#!/bin/sh
 #
 # Use this script to run your program LOCALLY.
 #
